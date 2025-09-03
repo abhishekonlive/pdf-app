@@ -185,9 +185,14 @@
             fileList.innerHTML = '';
             selectedFiles.forEach((file, index) => {
                 const fileItem = document.createElement('div');
-                fileItem.className = 'bg-white rounded-lg p-4 shadow-md border border-gray-200 flex items-center justify-between hover:shadow-lg transition-shadow';
+                fileItem.className = 'bg-white rounded-lg p-4 shadow-md border border-gray-200 flex items-center justify-between hover:shadow-lg transition-shadow cursor-move';
+                fileItem.draggable = true;
+                fileItem.dataset.index = index;
                 fileItem.innerHTML = `
                     <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400 mr-3 cursor-grab" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                        </svg>
                         <svg class="w-8 h-8 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
                         </svg>
@@ -202,6 +207,12 @@
                         </svg>
                     </button>
                 `;
+                
+                fileItem.addEventListener('dragstart', handleDragStart);
+                fileItem.addEventListener('dragover', handleDragOverItem);
+                fileItem.addEventListener('drop', handleDropItem);
+                fileItem.addEventListener('dragend', handleDragEnd);
+                
                 fileList.appendChild(fileItem);
             });
         }
@@ -231,6 +242,34 @@
                 updateMergeButton();
                 window.URL.revokeObjectURL(downloadUrl);
             };
+        }
+
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.target.dataset.index);
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleDragOverItem(e) {
+            e.preventDefault();
+        }
+
+        function handleDropItem(e) {
+            e.preventDefault();
+            const dropIndex = parseInt(e.target.closest('[data-index]').dataset.index);
+            
+            if (draggedIndex !== null && draggedIndex !== dropIndex) {
+                const draggedFile = selectedFiles[draggedIndex];
+                selectedFiles.splice(draggedIndex, 1);
+                selectedFiles.splice(dropIndex, 0, draggedFile);
+                updateFileList();
+            }
+        }
+
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            draggedIndex = null;
         }
 
         async function mergePDFs() {
