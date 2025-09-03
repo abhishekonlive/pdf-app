@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Merger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <svg class="w-8 h-8 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-xl font-bold text-gray-800">PDF Merger</span>
+            </div>
+            <nav class="flex space-x-6">
+                <a href="/" class="text-blue-600 font-medium">Home</a>
+                <a href="/about" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">About Us</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Page Title -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">PDF Merger</h1>
+            <p class="text-gray-600">Combine multiple PDF files into one document</p>
+        </div>
+
+        <!-- Drop Zone -->
+        <div id="dropZone" class="relative border-2 border-dashed border-gray-300 rounded-xl p-12 text-center bg-white shadow-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer group">
+            <div class="drop-content">
+                <div class="mb-4">
+                    <svg class="mx-auto h-16 w-16 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">Drop PDF files here</h3>
+                <p class="text-gray-500 mb-4">or click to browse your files</p>
+                <div class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Select Files
+                </div>
+                <input type="file" id="fileInput" multiple accept=".pdf" class="hidden">
+            </div>
+            <div id="dragOverlay" class="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-xl hidden items-center justify-center">
+                <div class="text-blue-600 font-semibold text-lg animate-bounce-slow">
+                    Drop files here!
+                </div>
+            </div>
+        </div>
+
+        <!-- File List -->
+        <div id="fileList" class="mt-8 space-y-3"></div>
+
+        <!-- Merge Button -->
+        <div class="mt-8 text-center">
+            <button id="mergeBtn" disabled class="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg shadow-lg hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100">
+                <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                </svg>
+                Merge PDFs
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progress" class="mt-6 hidden">
+            <div class="bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full animate-pulse-slow transition-all duration-500" style="width: 0%" id="progressBar"></div>
+            </div>
+            <p class="text-center text-gray-600 mt-2" id="progressText">Processing...</p>
+        </div>
+
+        <!-- Download Section -->
+        <div id="downloadSection" class="mt-8 hidden">
+            <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                <div class="mb-4">
+                    <svg class="mx-auto h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-green-800 mb-2">PDF Merged Successfully!</h3>
+                <p class="text-green-600 mb-4">Your merged PDF is ready for download</p>
+                <button id="downloadBtn" class="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-lg">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Download Merged PDF
+                </button>
+                <button id="newMergeBtn" class="ml-4 inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Merge New Files
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const progress = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const dragOverlay = document.getElementById('dragOverlay');
+
+        // Drag and drop handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        mergeBtn.addEventListener('click', mergePDFs);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('border-blue-500', 'bg-blue-50');
+            dragOverlay.classList.remove('hidden');
+            dragOverlay.classList.add('flex');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            if (!dropZone.contains(e.relatedTarget)) {
+                dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+                dragOverlay.classList.add('hidden');
+                dragOverlay.classList.remove('flex');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            dragOverlay.classList.add('hidden');
+            dragOverlay.classList.remove('flex');
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type === 'application/pdf');
+            addFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+        }
+
+        function addFiles(files) {
+            files.forEach(file => {
+                if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
+                }
+            });
+            updateFileList();
+            updateMergeButton();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            updateMergeButton();
+        }
+
+        function updateFileList() {
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'bg-white rounded-lg p-4 shadow-md border border-gray-200 flex items-center justify-between hover:shadow-lg transition-shadow';
+                fileItem.innerHTML = `
+                    <div class="flex items-center">
+                        <svg class="w-8 h-8 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-gray-800">${file.name}</p>
+                            <p class="text-sm text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function updateMergeButton() {
+            mergeBtn.disabled = selectedFiles.length < 2;
+        }
+
+        function showDownloadSection(downloadUrl) {
+            const downloadSection = document.getElementById('downloadSection');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const newMergeBtn = document.getElementById('newMergeBtn');
+            
+            downloadSection.classList.remove('hidden');
+            
+            downloadBtn.onclick = () => {
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'merged.pdf';
+                a.click();
+            };
+            
+            newMergeBtn.onclick = () => {
+                downloadSection.classList.add('hidden');
+                selectedFiles = [];
+                updateFileList();
+                updateMergeButton();
+                window.URL.revokeObjectURL(downloadUrl);
+            };
+        }
+
+        async function mergePDFs() {
+            if (selectedFiles.length < 2) return;
+
+            progress.classList.remove('hidden');
+            mergeBtn.disabled = true;
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Preparing files...';
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => formData.append('files', file));
+
+            try {
+                progressBar.style.width = '30%';
+                progressText.textContent = 'Uploading files...';
+
+                const response = await fetch('/merge', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressBar.style.width = '70%';
+                progressText.textContent = 'Merging PDFs...';
+
+                if (response.ok) {
+                    progressBar.style.width = '100%';
+                    progressText.textContent = 'Complete!';
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    
+                    setTimeout(() => {
+                        progress.classList.add('hidden');
+                        showDownloadSection(url);
+                    }, 1000);
+                } else {
+                    throw new Error('Merge failed');
+                }
+            } catch (error) {
+                progressText.textContent = 'Error occurred. Please try again.';
+                progressBar.classList.add('bg-red-500');
+                setTimeout(() => {
+                    progress.classList.add('hidden');
+                    progressBar.classList.remove('bg-red-500');
+                }, 3000);
+            } finally {
+                mergeBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
